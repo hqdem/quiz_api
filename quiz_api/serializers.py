@@ -4,22 +4,19 @@ from .models import Topic, Test, Question, Option, TestsUsers
 
 
 class OptionSerializer(serializers.ModelSerializer):
-    question_id = serializers.IntegerField(source='question.id')
-
     class Meta:
         model = Option
         fields = [
             'id',
             'content',
             'is_right_option',
-            'question_id'
+            'question'
         ]
 
 
 class QuestionSerializer(serializers.ModelSerializer):
     right_options = serializers.SerializerMethodField()
     wrong_options = serializers.SerializerMethodField()
-    test_id = serializers.IntegerField(source='test.id')
 
     class Meta:
         model = Question
@@ -28,7 +25,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             'content',
             'right_options',
             'wrong_options',
-            'test_id'
+            'test',
         ]
 
     def get_right_options(self, obj):
@@ -49,6 +46,34 @@ class TestsUsersSerializer(serializers.ModelSerializer):
 
 class TestSerializer(serializers.ModelSerializer):
     topic = serializers.CharField(max_length=255, read_only=True)
+    topic_id = serializers.IntegerField(read_only=True)
+    questions = QuestionSerializer(many=True, read_only=True)
+    max_right_options = serializers.SerializerMethodField(read_only=True)
+    users = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Test
+        fields = [
+            'id',
+            'topic_id',
+            'topic',
+            'questions',
+            'max_right_options',
+            'users'
+        ]
+
+    def get_max_right_options(self, obj):
+        max_mark = 0
+        data = QuestionSerializer(obj.questions, many=True).data
+        for question in data:
+            max_mark += len(question['right_options'])
+        return max_mark
+
+    def get_users(self, obj):
+        return TestsUsersSerializer(obj.tests_users, many=True).data
+
+
+class TestAndCreateSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
     max_right_options = serializers.SerializerMethodField(read_only=True)
     users = serializers.SerializerMethodField(read_only=True)
