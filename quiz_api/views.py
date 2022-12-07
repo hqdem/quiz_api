@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.core.mail import send_mail
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN
@@ -31,6 +32,14 @@ class AnswerOnTestProcedureAPIView(APIView):
         user_mark = round((count_right_questions / max_mark) * 10)
 
         TestsUsers.objects.create(user=user, test=test, result=user_mark)
+
+        send_mail(
+            subject='Результаты теста',
+            message=f'Ваш результат - {user_mark}',
+            from_email='admin@admin.com',
+            recipient_list=[user.email],
+            fail_silently=False
+        )
 
         return Response({
             'mark': user_mark,
